@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser'); // Changed 'body' to 'bodyParser'
 const path = require('path');
-const { saveAccountoDatabase,getdatatoAccountDatabase  } = require('./script'); // Corrected function name
+const db = require('./script'); // Corrected function name
 
 // Use body-parser middleware
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -30,16 +30,13 @@ app.get('/register', (req, res) => {
 // Handle registration form submission
 app.post('/register', (req, res) => {
     console.log(req.body);
-    saveAccountoDatabase(req.body['email'],req.body['username'], req.body['password'],req.body['pin'],req.body['birthday'],req.body['phone'],); // Use correct field names
+    db.saveAccountoDatabase(req.body['email'],req.body['username'], req.body['password'],req.body['pin'],req.body['birthday'],req.body['phone'],); // Use correct field names
     res.sendFile(path.join(__dirname, 'static', 'login.html'));
 });
 
 app.post('/login', async (req, res) => {
-    console.log(req.body)
-    console.log(req.body['username'])
-    console.log(req.body['password'])
     try {
-        const isAuthenticated = await getdatatoAccountDatabase(req.body['username'], req.body['password']);
+        const isAuthenticated = await db.getdatatoAccountDatabase(req.body['username'], req.body['password']);
         if (isAuthenticated) {
             res.send('Login successful');
         } else {
