@@ -30,18 +30,16 @@ app.get('/register', (req, res) => {
 // Handle registration form submission
 app.post('/register', (req, res) => {
     console.log(req.body);
-    saveAccountoDatabase(req.body['new-username'], req.body['new-password']); // Use correct field names
+    saveAccountoDatabase(req.body['email'],req.body['username'], req.body['password'],req.body['pin'],req.body['birthday'],req.body['phone'],); // Use correct field names
     res.sendFile(path.join(__dirname, 'static', 'login.html'));
 });
 
 app.post('/login', async (req, res) => {
-    const username = req.body.email;
-    const password = req.body.password;
     console.log(req.body)
-    console.log(req.body.username)
-    console.log(password)
+    console.log(req.body['username'])
+    console.log(req.body['password'])
     try {
-        const isAuthenticated = await getdatatoAccountDatabase(username, password);
+        const isAuthenticated = await getdatatoAccountDatabase(req.body['username'], req.body['password']);
         if (isAuthenticated) {
             res.send('Login successful');
         } else {

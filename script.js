@@ -1,7 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 
 // Open a database connection
-const db = new sqlite3.Database('C:/Users/AMD PC/Documents/GitHub/JullieJS/bankSystem/bankSystem.db'); // Adjust the file path as needed
+const db = new sqlite3.Database('static/BankDB.db'); // Adjust the file path as needed
 
 // Execute SQL commands
 const createBankDatabase = () => { 
@@ -27,9 +27,14 @@ const createbankAccountDb = () => {
     const bankAccountDb = `
     CREATE TABLE IF NOT EXISTS accounts (
         id INTEGER PRIMARY KEY,
-        Username TEXT,
-        Password TEXT
-    )
+        email TEXT,
+        username TEXT NOT NULL,
+        password TEXT NOT NULL,
+        pin INTEGER NOT NULL,
+        birthday DATE NOT NULL,
+        phone TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     `;
     db.run(bankAccountDb, (err) => {
         if (err) {
@@ -40,20 +45,17 @@ const createbankAccountDb = () => {
     });
 };
 
-const saveAccountoDatabase = (username,password) => {
-    Username = username
-    Password = password
-    console.log(Username)
-    console.log(Password)
+const saveAccountoDatabase = (email,username,password,pin,birthday,phone) => {
+
     const query = "SELECT * FROM accounts WHERE Username = ?";
-    db.get(query, [Username], (err, row) => {
+    db.get(query, [email], (err, row) => {
         if (err) {
             console.error("Error checking existing account:", err.message);
         } else if (row) {
             console.log("Account with username already exists:", Username);
         } else {
-            const insertQuery = "INSERT INTO accounts (Username, Password) VALUES (?, ?)";
-            db.run(insertQuery, [Username, Password], (err) => {
+            const insertQuery = "INSERT INTO accounts (email,username,password, pin, birthday, Phone) VALUES (?, ?, ?, ?, ?, ?)";
+            db.run(insertQuery, [email,username,password,pin,birthday,phone], (err) => {
                 if (err) {
                     console.error("Error inserting into accounts:", err.message);
                 } else {
@@ -105,16 +107,17 @@ const getdatatoDatabase = () => {
     });
 };
 
-const getdatatoAccountDatabase = (userN, passN) => {
+const getdatatoAccountDatabase = (email, password) => {
     return new Promise((resolve, reject) => {
-        const selectDataQuery = "SELECT * FROM accounts WHERE Username = ?";
-        db.get(selectDataQuery, [userN], (err, row) => {
+        const selectDataQuery = "SELECT * FROM accounts WHERE email = ?";
+        db.get(selectDataQuery, [email], (err, row) => {
             if (err) {
                 reject(err);
             } else {
-                if (row && row.Password === passN) {
+                if (row && row.password === password) {
                     resolve(true);
                 } else {
+                    console.log(row)
                     resolve(false);
                 }
             }
