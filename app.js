@@ -1,21 +1,50 @@
 const express = require('express');
-const app = express();
-const bodyParser = require('body-parser'); // Changed 'body' to 'bodyParser'
-const path = require('path');
-const db = require('./script'); // Corrected function name
+const session = require('express-session');
+const bodyParser = require('body-parser');
 
-// Use body-parser middleware
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json()); // Add JSON body parsing
+const path = require('path');
+const db = require('./script');
+
+const app = express();
+
+
 db.createbankAccountDb()
-// Serve static files from the 'static' directory
+
+app.use(session({
+  secret: 'your-secret-key', // Change this to a long random string
+  resave: false,
+  saveUninitialized: true
+}));
+
+
+// Middleware
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 app.use('/public', express.static(path.join(__dirname, 'static')));
 
-// Define routes
+// Routes
+
+app.get('/getData', async (req, res) => {
+    try {
+        const email = req.session.email; // Assuming you have stored the logged-in user's email in the session
+        const balance = await db.getBalance(email);
+        console.log(balance) // Get the balance for the logged-in user
+        res.json({ balance }); // Send the balance data back to the client in JSON format
+    } catch (error) {
+        console.error('Error fetching balance:', error);
+        res.status(500).json({ error: 'Internal server error' }); // Send an error response if there's an issue
+    }
+});
+
+app.get('/deposit',(req,res)=>{
+    res.sendFile(path.join(__dirname, 'static', 'deposit.html'));
+})
 app.get('/', (req, res) => {
-    db.getdatatoAccountDatabase()
     res.sendFile(path.join(__dirname, 'static', 'home.html'));
 });
+app.get('/withdraw',(req,res)=>{
+    res.sendFile(path.join(__dirname, 'static', 'withdraw.html'));
+})
 app.get('/home', (req, res) => {
     res.sendFile(path.join(__dirname, 'static', 'home.html'));
 });
@@ -28,24 +57,58 @@ app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, 'static', 'register.html'));
 });
 
-// Handle registration form submission
+app.get('/main', (req, res) => {
+    res.sendFile(path.join(__dirname, 'static', 'main.html'));
+});
+
 app.post('/register', (req, res) => {
     console.log(req.body);
     db.saveAccountoDatabase(req.body['email'],req.body['username'], req.body['password'],req.body['pin'],req.body['birthday'],req.body['phone'],); // Use correct field names
-    res.sendFile(path.join(__dirname, 'static', 'login.html'));
+    res.redirect('/login');
+});
+
+
+app.post('/deposit',(req,res)=>{
+    console.log(req.body);
+    const depositAmount = parseFloat(req.body.amount); // Parse withdrawal amount as a float
+    const email = req.session.email;
+
+    if (isNaN(depositAmount) || depositAmount <= 0) {
+        console.log("Invalid withdrawal amount");
+        res.redirect('/main'); // Redirect back to main page if withdrawal amount is invalid
+        return;
+    }
+
+    db.deposit(depositAmount, email);
+    res.redirect('/main'); // Redirect back to main page after processing withdrawal
+})
+app.post('/withdraw', (req, res) => {
+    console.log(req.body);
+    const withdrawAmount = parseFloat(req.body.amount); // Parse withdrawal amount as a float
+    const email = req.session.email;
+
+    if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
+        console.log("Invalid withdrawal amount");
+        res.redirect('/main'); // Redirect back to main page if withdrawal amount is invalid
+        return;
+    }
+
+    db.withdraw(withdrawAmount, email);
+    res.redirect('/main'); // Redirect back to main page after processing withdrawal
 });
 
 app.post('/login', async (req, res) => {
-    console.log(req.body); // Check if correct data is received
+    console.log(req.body);
     try {
-        const email = req.body['email'];
-        const password = req.body['password'];
+        const { email, password } = req.body;
         const isAuthenticated = await db.getdatatoAccountDatabase(email, password);
-        console.log("Is Authenticated:", isAuthenticated); // Add this line for debugging
+        console.log("Is Authenticated:", isAuthenticated);
         if (isAuthenticated) {
-            res.sendFile(path.join(__dirname, 'static', 'main.html'));
+            req.session.email = email;
+            console.log(req.session.email) 
+            res.redirect('/main'); 
         } else {
-            res.send('Invalid username or password');
+            res.status(401).send('Invalid username or password');
         }
     } catch (error) {
         console.error('Error:', error.message);
@@ -53,15 +116,12 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// db.getAllAccounts()
-// .then((rows) => {
-//     console.log("All accounts in the database:");
-//     console.log(rows); // Log rows to see its structure
-// })
-// .catch((err) => {
-//     console.error("Error fetching accounts:", err);
-// });
-// Start the server
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
+
+
+
+
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
