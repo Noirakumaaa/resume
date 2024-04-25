@@ -57,8 +57,23 @@ app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, 'static', 'register.html'));
 });
 
+app.get('/logout',(req,res)=>{
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Error destroying session:', err);
+            res.status(500).send('Internal server error');
+        } else {
+            res.redirect('/login'); // Redirect to login page after session is destroyed
+        }
+    });
+})
 app.get('/main', (req, res) => {
+    console.log(req.session.email)
+    if (req.session.email){
     res.sendFile(path.join(__dirname, 'static', 'main.html'));
+    }else{
+        res.redirect('/home')
+    }
 });
 
 app.post('/register', (req, res) => {
